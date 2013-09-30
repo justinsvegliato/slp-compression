@@ -1,0 +1,3 @@
+{"ts":1380577834332,"silentsave":true,"restoring":false,"patch":[[]],"length":0}
+{"contributors":[],"silentsave":false,"ts":1380577859205,"patch":[[{"diffs":[[1,"from compressor import compress"]],"start1":0,"start2":0,"length1":0,"length2":31}]],"length":31,"saved":false}
+{"ts":1380577897564,"patch":[[{"diffs":[[1,"#/usr/bin/python\n\n"],[0,"from com"]],"start1":0,"start2":0,"length1":8,"length2":26},{"diffs":[[0," import compress"],[1,"\nimport sys\n\ndef main():\n    text = sys.argv[1]\n    compress(text)\n\nif __name__ == \"__main__\":\n    main()"]],"start1":33,"start2":33,"length1":16,"length2":121}]],"length":154,"saved":false}
