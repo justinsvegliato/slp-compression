@@ -63,6 +63,10 @@ class Compressor:
         return text
         
     def decompress_to_file(self, encoded_text, productions, filename):
+        text = self.decompress_to_string(encoded_text, productions)
+        
         f = open(filename, 'w')
-        f.write(self.decompress_to_string(encoded_text, productions))
+        f.write(text)
         f.close()
+        
+        return text
