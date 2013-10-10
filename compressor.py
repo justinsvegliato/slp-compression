@@ -1,9 +1,14 @@
+#/usr/bin/python
+import argparse
+import ast
+import operator
+
 class Compressor:
     def __init__(self, delimiter="|"):
         self.delimiter = delimiter
         
     def compress_to_string(self, text):        
-        nonterminal = 0
+        nonterminal = 1
         productions = {}
     
         characters = list(text)
@@ -47,26 +52,44 @@ class Compressor:
         
         return productions 
 
-    def decompress_to_string(self, encoded_text, productions):
+    def decompress_to_string(self, productions):
         def decompress_symbol(encoded_symbol):
             value = productions[int(encoded_symbol)]
             if self.delimiter in value:
                 pair = value.split(self.delimiter)
                 return decompress_symbol(pair[0]) + decompress_symbol(pair[1])
             else:
-                return value
+                return value          
+              
+        base = max(productions.iteritems(), key=operator.itemgetter(0))[0]
+        return decompress_symbol(base)
         
-        text = ""
-        for encoded_symbol in list(encoded_text):
-            text += decompress_symbol(encoded_symbol) 
-    
-        return text
-        
-    def decompress_to_file(self, encoded_text, productions, filename):
-        text = self.decompress_to_string(encoded_text, productions)
+    def decompress_to_file(self, productions, filename):
+        text = self.decompress_to_string(productions)
         
         f = open(filename, 'w')
         f.write(text)
         f.close()
         
         return text
+        
+def main():
+    parser = argparse.ArgumentParser(description='Handles straight-line program compression and decompression of text')
+    parser.add_argument('action', metavar='A', choices=['compress', 'decompress'], help='the operation [compress or decompress] to be applied')
+    parser.add_argument('text', metavar='T', help='the text or production rules to be evaluated')
+    parser.add_argument('-f', '--file', help='the location of the result')
+    args = parser.parse_args()        
+    
+    compressor = Compressor("|")    
+    if args.action == "compress":
+        if args.file:
+            compressor.compress_to_file(args.text, args.file)
+        print compressor.compress_to_string(args.text)
+    elif args.action == "decompress":
+        productions = ast.literal_eval(args.text)
+        if args.file:
+            compressor.decompress_to_file(productions, args.file)  
+        print compressor.decompress_to_string(productions)
+
+if __name__ == "__main__":
+    main()
