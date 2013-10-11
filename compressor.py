@@ -31,7 +31,7 @@ class Compressor:
                 if (self.delimiter.join(characters[index:index + 2]) == productions[nonterminal]):
                     characters[index] = str(nonterminal)
                     del characters[index + 1]                
-                      
+                                          
             nonterminal += 1      
         
         return productions
@@ -44,51 +44,51 @@ class Compressor:
                 return decompress_symbol(pair[0]) + decompress_symbol(pair[1])
             else:
                 return value
-                                        
+                                                        
         base = max(productions.iteritems(), key=operator.itemgetter(0))[0]
         return decompress_symbol(base)
     
     def compress_file(self, filename):    
-        components = []         
+        handledDelimiter = False         
         with open(filename, 'r') as input_file:
             input_text = input_file.read()
-            productions = self.compress_string(input_text)
-            new_filename = filename.split(".")[0] + ".slp"
-            with open(new_filename, 'wb') as output_file:                
+            productions = self.compress_string(input_text)       
+                 
+            with open(new_filename  + ".slp", 'wb') as output_file:                
                 for head, body in productions.iteritems():
                     if not self.delimiter in body:
                         output_file.write(struct.pack('>H', head))
                         output_file.write(struct.pack('>H', ord(body)))
                     else:       
-                        if not len(components):
+                        if not handledDelimiter:
                             output_file.write(struct.pack('>H', self.file_delimiter)) 
+                            handledDelimiter = True
+                            
                         output_file.write(struct.pack('>H', head))                     
-                        components = body.split(self.delimiter)                
-                        output_file.write(struct.pack('>H', int(components[0])))
-                        output_file.write(struct.pack('>H', int(components[1])))
+                        nonterminals = body.split(self.delimiter)                
+                        output_file.write(struct.pack('>H', int(nonterminals[0])))
+                        output_file.write(struct.pack('>H', int(nonterminals[1])))
         
     def decompress_file(self, filename):
         productions = {}
-        initializedTerminals = False
+        handledTerminals = False
         with open(filename, 'rb') as input_file:
             character = input_file.read(2)
             while character:
                 nonterminal = struct.unpack('>H', character)[0]
-                if not initializedTerminals:
+                if not handledTerminals:
                     if nonterminal == self.file_delimiter:
-                        initializedTerminals = True
+                        handledTerminals = True
                     else:
                         terminal = chr(struct.unpack('>H', input_file.read(2))[0])
                         productions[nonterminal] = terminal
                 else:
                     left_nonterminal = str(struct.unpack('>H', input_file.read(2))[0])
                     right_nonterminal = str(struct.unpack('>H', input_file.read(2))[0])
-                    productions[nonterminal] = left_nonterminal + self.delimiter + right_nonterminal   
-                  
+                    productions[nonterminal] = left_nonterminal + self.delimiter + right_nonterminal                     
                 character = input_file.read(2)                                               
             
-            new_filename = filename.split(".")[0] + ".txt"
-            with open(new_filename, 'w') as output_file:                    
+            with open(new_filename[:-4], 'w') as output_file:                    
                 output_file.write(self.decompress_string(productions))
         
 def main():
@@ -100,11 +100,13 @@ def main():
     
     compressor = Compressor("|")    
     if args.action == "compress":
+        print "Compressing..."
         if args.file:
             compressor.compress_file(args.file)
         elif args.text:
             print compressor.compress_string(args.text)
     elif args.action == "decompress":
+        print "Decompressing..."
         if args.file:
             compressor.decompress_file(args.file)  
         elif args.text:
