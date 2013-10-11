@@ -2,12 +2,14 @@
 import argparse
 import ast
 import operator
+import struct
 
 class Compressor:
-    def __init__(self, delimiter="|"):
+    def __init__(self, delimiter="|", file_delimiter=65535):
         self.delimiter = delimiter
+        self.file_delimiter = file_delimiter;
         
-    def compress_to_string(self, text):        
+    def compress_string(self, text):        
         nonterminal = 1
         productions = {}
     
@@ -33,63 +35,80 @@ class Compressor:
             nonterminal += 1      
         
         return productions
-    
-    def compress_to_file(self, text, filename):
-        productions = self.compress_to_string(text)
         
-        output = ""
-        for key, value in productions.iteritems():
-            output += str(key);
-            if self.delimiter in value:
-                pair = value.split(self.delimiter)
-                output += pair[0] + pair[1]
-            else:
-                output += value; 
-        
-        f = open(filename, 'w')
-        f.write(output)
-        f.close()    
-        
-        return productions 
-
-    def decompress_to_string(self, productions):
+    def decompress_string(self, productions):
         def decompress_symbol(encoded_symbol):
             value = productions[int(encoded_symbol)]
             if self.delimiter in value:
                 pair = value.split(self.delimiter)
                 return decompress_symbol(pair[0]) + decompress_symbol(pair[1])
             else:
-                return value          
-              
+                return value
+                                        
         base = max(productions.iteritems(), key=operator.itemgetter(0))[0]
         return decompress_symbol(base)
+    
+    def compress_file(self, filename):    
+        components = []         
+        with open(filename, 'r') as input_file:
+            input_text = input_file.read()
+            productions = self.compress_string(input_text)
+            new_filename = filename.split(".")[0] + ".slp"
+            with open(new_filename, 'wb') as output_file:                
+                for head, body in productions.iteritems():
+                    if not self.delimiter in body:
+                        output_file.write(struct.pack('>H', head))
+                        output_file.write(struct.pack('>H', ord(body)))
+                    else:       
+                        if not len(components):
+                            output_file.write(struct.pack('>H', self.file_delimiter)) 
+                        output_file.write(struct.pack('>H', head))                     
+                        components = body.split(self.delimiter)                
+                        output_file.write(struct.pack('>H', int(components[0])))
+                        output_file.write(struct.pack('>H', int(components[1])))
         
-    def decompress_to_file(self, productions, filename):
-        text = self.decompress_to_string(productions)
-        
-        f = open(filename, 'w')
-        f.write(text)
-        f.close()
-        
-        return text
+    def decompress_file(self, filename):
+        productions = {}
+        initializedTerminals = False
+        with open(filename, 'rb') as input_file:
+            character = input_file.read(2)
+            while character:
+                nonterminal = struct.unpack('>H', character)[0]
+                if not initializedTerminals:
+                    if nonterminal == self.file_delimiter:
+                        initializedTerminals = True
+                    else:
+                        terminal = chr(struct.unpack('>H', input_file.read(2))[0])
+                        productions[nonterminal] = terminal
+                else:
+                    left_nonterminal = str(struct.unpack('>H', input_file.read(2))[0])
+                    right_nonterminal = str(struct.unpack('>H', input_file.read(2))[0])
+                    productions[nonterminal] = left_nonterminal + self.delimiter + right_nonterminal   
+                  
+                character = input_file.read(2)                                               
+            
+            new_filename = filename.split(".")[0] + ".txt"
+            with open(new_filename, 'w') as output_file:                    
+                output_file.write(self.decompress_string(productions))
         
 def main():
     parser = argparse.ArgumentParser(description='Handles straight-line program compression and decompression of text')
     parser.add_argument('action', metavar='A', choices=['compress', 'decompress'], help='the operation [compress or decompress] to be applied')
-    parser.add_argument('text', metavar='T', help='the text or production rules to be evaluated')
-    parser.add_argument('-f', '--file', help='the location of the result')
+    parser.add_argument('-t', '--text', help='the text or production rules to be evaluated')
+    parser.add_argument('-f', '--file', help='the file to be evaluated')
     args = parser.parse_args()        
     
     compressor = Compressor("|")    
     if args.action == "compress":
         if args.file:
-            compressor.compress_to_file(args.text, args.file)
-        print compressor.compress_to_string(args.text)
+            compressor.compress_file(args.file)
+        elif args.text:
+            print compressor.compress_string(args.text)
     elif args.action == "decompress":
-        productions = ast.literal_eval(args.text)
         if args.file:
-            compressor.decompress_to_file(productions, args.file)  
-        print compressor.decompress_to_string(productions)
+            compressor.decompress_file(args.file)  
+        elif args.text:
+            print compressor.decompress_string(ast.literal_eval(args.text))
 
 if __name__ == "__main__":
     main()
