@@ -5,8 +5,8 @@ import operator
 import struct
 
 class Compressor:
-    def __init__(self, delimiter="|", file_delimiter=65535):
-        self.delimiter = delimiter
+    def __init__(self, text_delimiter="|", file_delimiter=65535):
+        self.text_delimiter = text_delimiter
         self.file_delimiter = file_delimiter;
         
     def compress_string(self, text):        
@@ -23,12 +23,12 @@ class Compressor:
                 head += 1
                     
         while len(bodies) > 1:
-            productions[head] = self.delimiter.join(bodies[0:2])
+            productions[head] = self.text_delimiter.join(bodies[0:2])
             bodies[0] = str(head)
             del bodies[1]
               
             for index in range(1, len(bodies)):
-                if (self.delimiter.join(bodies[index:index + 2]) == productions[head]):
+                if (self.text_delimiter.join(bodies[index:index + 2]) == productions[head]):
                     bodies[index] = str(head)
                     del bodies[index + 1]                
                                           
@@ -39,8 +39,8 @@ class Compressor:
     def decompress_string(self, productions):
         def decompress_symbol(encoded_symbol):
             value = productions[int(encoded_symbol)]
-            if self.delimiter in value:
-                pair = value.split(self.delimiter)
+            if self.text_delimiter in value:
+                pair = value.split(self.text_delimiter)
                 return decompress_symbol(pair[0]) + decompress_symbol(pair[1])
             else:
                 return value
@@ -56,7 +56,7 @@ class Compressor:
                  
             with open(filename  + ".slp", 'wb') as output_file:                
                 for head, body in productions.iteritems():
-                    if not self.delimiter in body:
+                    if not self.text_delimiter in body:
                         output_file.write(struct.pack('>H', head))
                         output_file.write(struct.pack('>H', ord(body)))
                     else:       
@@ -65,7 +65,7 @@ class Compressor:
                             handledDelimiter = True
                             
                         output_file.write(struct.pack('>H', head))                     
-                        nonterminals = body.split(self.delimiter)                
+                        nonterminals = body.split(self.text_delimiter)                
                         output_file.write(struct.pack('>H', int(nonterminals[0])))
                         output_file.write(struct.pack('>H', int(nonterminals[1])))
         
@@ -85,7 +85,7 @@ class Compressor:
                 else:
                     left_nonterminal = str(struct.unpack('>H', input_file.read(2))[0])
                     right_nonterminal = str(struct.unpack('>H', input_file.read(2))[0])
-                    productions[nonterminal] = left_nonterminal + self.delimiter + right_nonterminal                     
+                    productions[nonterminal] = left_nonterminal + self.text_delimiter + right_nonterminal                     
                 character = input_file.read(2)                                               
             
             with open(filename[:-4], 'w') as output_file:                    
