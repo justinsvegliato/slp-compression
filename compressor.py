@@ -10,29 +10,29 @@ class Compressor:
         self.file_delimiter = file_delimiter;
         
     def compress_string(self, text):        
-        nonterminal = 1
+        head = 1
         productions = {}
     
-        characters = list(text)
-        for character in list(text):
-            if not character in productions.values():
-                productions[nonterminal] = character
-                for index, element in enumerate(characters):
-                    if element == character:
-                        characters[index] = str(nonterminal)
-                nonterminal += 1
+        bodies = list(text)
+        for body in list(text):
+            if not body in productions.values():
+                productions[head] = body
+                for index, element in enumerate(bodies):
+                    if element == body:
+                        bodies[index] = str(head)
+                head += 1
                     
-        while len(characters) > 1:
-            productions[nonterminal] = self.delimiter.join(characters[0:2])
-            characters[0] = str(nonterminal)
-            del characters[1]
+        while len(bodies) > 1:
+            productions[head] = self.delimiter.join(bodies[0:2])
+            bodies[0] = str(head)
+            del bodies[1]
               
-            for index in range(1, len(characters)):
-                if (self.delimiter.join(characters[index:index + 2]) == productions[nonterminal]):
-                    characters[index] = str(nonterminal)
-                    del characters[index + 1]                
+            for index in range(1, len(bodies)):
+                if (self.delimiter.join(bodies[index:index + 2]) == productions[head]):
+                    bodies[index] = str(head)
+                    del bodies[index + 1]                
                                           
-            nonterminal += 1      
+            head += 1      
         
         return productions
         
@@ -54,7 +54,7 @@ class Compressor:
             input_text = input_file.read()
             productions = self.compress_string(input_text)       
                  
-            with open(new_filename  + ".slp", 'wb') as output_file:                
+            with open(filename  + ".slp", 'wb') as output_file:                
                 for head, body in productions.iteritems():
                     if not self.delimiter in body:
                         output_file.write(struct.pack('>H', head))
@@ -88,14 +88,15 @@ class Compressor:
                     productions[nonterminal] = left_nonterminal + self.delimiter + right_nonterminal                     
                 character = input_file.read(2)                                               
             
-            with open(new_filename[:-4], 'w') as output_file:                    
+            with open(filename[:-4], 'w') as output_file:                    
                 output_file.write(self.decompress_string(productions))
         
 def main():
     parser = argparse.ArgumentParser(description='Handles straight-line program compression and decompression of text')
     parser.add_argument('action', metavar='A', choices=['compress', 'decompress'], help='the operation [compress or decompress] to be applied')
-    parser.add_argument('-t', '--text', help='the text or production rules to be evaluated')
-    parser.add_argument('-f', '--file', help='the file to be evaluated')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-t', '--text', help='the text or production rules to be evaluated')
+    group.add_argument('-f', '--file', help='the file to be evaluated')
     args = parser.parse_args()        
     
     compressor = Compressor("|")    
