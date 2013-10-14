@@ -3,6 +3,7 @@ import argparse
 import ast
 import operator
 import struct
+import time
 
 class Compressor:
     def __init__(self, text_delimiter="|", file_delimiter=65535):
@@ -13,26 +14,35 @@ class Compressor:
         head = 1
         productions = {}
     
+        t0 = time.time()        
         bodies = list(text)
-        for body in list(text):
+        for body in set(text):
+            # If we haven't added this character to the productions dictionary yet
             if not body in productions.values():
                 productions[head] = body
+                
+                # Replace all occurrences of this terminal with its corresponding nonterminal
                 for index, element in enumerate(bodies):
                     if element == body:
                         bodies[index] = str(head)
-                head += 1
-                    
+                head += 1                
+        print "Terminal assignment: %d seconds" % (time.time() - t0)        
+                            
+        t0 = time.time()    
         while len(bodies) > 1:
+            # Create a nonterminal conjunction production rule
             productions[head] = self.text_delimiter.join(bodies[0:2])
             bodies[0] = str(head)
             del bodies[1]
-              
+            
+            # Replace all occurrences of this production rule
             for index in range(1, len(bodies)):
                 if (self.text_delimiter.join(bodies[index:index + 2]) == productions[head]):
                     bodies[index] = str(head)
                     del bodies[index + 1]                
                                           
-            head += 1      
+            head += 1                  
+        print "Nonterminal assignment: %d seconds" % (time.time() - t0)
         
         return productions
         
@@ -43,12 +53,13 @@ class Compressor:
                 pair = value.split(self.text_delimiter)
                 return decompress_symbol(pair[0]) + decompress_symbol(pair[1])
             else:
-                return value
+                return value                
                                                         
         base = max(productions.iteritems(), key=operator.itemgetter(0))[0]
         return decompress_symbol(base)
     
-    def compress_file(self, filename):    
+    def compress_file(self, filename): 
+        t0 = time.time()       
         handledDelimiter = False         
         with open(filename, 'r') as input_file:
             input_text = input_file.read()
@@ -68,6 +79,7 @@ class Compressor:
                         nonterminals = body.split(self.text_delimiter)                
                         output_file.write(struct.pack('>H', int(nonterminals[0])))
                         output_file.write(struct.pack('>H', int(nonterminals[1])))
+        print "File Output: %d seconds" % (time.time() - t0)  
         
     def decompress_file(self, filename):
         productions = {}
