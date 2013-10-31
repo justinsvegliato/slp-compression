@@ -15,10 +15,7 @@ class Compressor:
             text = input_file.read()
             with open(filename + '.slp', 'wb') as output_file:  
                 # The current nonterminal
-                head = 1
-                
-                # Dictionary holding nonterminal-terminal pairs
-                productions = {}     
+                head = 1            
                 
                 # List of all characters in the string  
                 bodies = list(text)
@@ -29,10 +26,7 @@ class Compressor:
                 # Handle terminal rules by iterating through each character
                 for i in xrange(len(bodies)):
                     # Add this character to the production rules if it hasn't been added yet
-                    if not bodies[i] in productions.values():
-                        # Create the production rule
-                        productions[head] = bodies[i]
-                        
+                    if not bodies[i] in reverseProductions:                        
                         # Create the reverse production rule
                         reverseProductions[bodies[i]] = head
                   
@@ -60,9 +54,6 @@ class Compressor:
                             bodies[1] = str(reverseProductions[(bodies[1], bodies[2])])
                             del bodies[2]
                         else:
-                            # Create the nonterminal conjunction rule
-                            productions[head] = body
-    
                             # Create the reverse production rule                            
                             reverseProductions[body] = head
                             
@@ -177,7 +168,7 @@ def main():
     
     start = timeit.timeit()
     
-    compressor = Compressor("|")    
+    compressor = Compressor()    
     if args.action == "compress":
         print "Compressing..."        
         compressor.compress(args.file)
