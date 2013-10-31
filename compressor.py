@@ -6,17 +6,15 @@ import struct
 import timeit
 
 class Compressor:
-
-    def __init__(self, file_delimiter=65535):
-        self.file_delimiter = file_delimiter;
-        
+    file_delimiter = 65535
+            
     def compress(self, filename):                
         with open(filename, 'rb') as input_file:
             text = input_file.read()
             with open(filename + '.slp', 'wb') as output_file:  
                 # The current nonterminal
                 head = 1            
-                
+                                
                 # List of all characters in the string  
                 bodies = list(text)
                 
