@@ -1,2 +1,4 @@
+# Python output binary files
 *.pyc
+
 .DS_Store
